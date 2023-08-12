@@ -1,7 +1,10 @@
+#include "Arduino.h"
 #include "HardwareSerial.h"
 #include "HDLC_MX614.h"
 
 const int MaxFrameLgth = 300;
+
+const byte HDLC_Flag = 0x7E;
 
 byte RX = 2; // RX port number
 
@@ -19,7 +22,7 @@ byte M0 = 26;
 
 byte M1 = 30;
 
-byte PacketIn [MaxFrameLgth];
+byte HDLC_Packet [MaxFrameLgth];
 
 int FrameLength;
 
@@ -39,6 +42,8 @@ unsigned long DET_Time;
 
 long RX_TimeOut;
 
+long TX_TimeOut = 3000;
+
 boolean bitOut;
 
 boolean bitIn;
@@ -51,7 +56,9 @@ int Stuff = 0;
 
 word FCS = 0xFFFF;
 
+int TX_Counter = 0;
 
+int PTT_Delay = 500;
 
 /*
 
@@ -59,9 +66,9 @@ Library internal functions
 -------------------------------------------------------------------------------------------------------------------------------------------
 */
 
-boolean Timer_Running () {
+boolean Timer_Running (long TimerValue) {
 
-  return ((millis() - DET_Time) < RX_TimeOut);
+  return ((millis() - DET_Time) < TimerValue);
 
 }
 
@@ -81,15 +88,15 @@ void FCScalc(byte MSGbit){
 
 }
 
-word CalculatedFCS() {
+word CalculatedFCS(int FrameBytes) {
 
   byte PacketByte;
 
   FCS = 0xFFFF;
 
-  for (int i=0; i<=FrameLength-2; i++) {
+  for (int i=0; i<=FrameBytes; i++) {
 
-    PacketByte = PacketIn[i];
+    PacketByte = HDLC_Packet[i];
 
     for (int j=0; j<=7; j++) {
 
@@ -103,23 +110,17 @@ word CalculatedFCS() {
 
   FCS = FCS^0xFFFF;
 
-  Serial.print("Calculated FCS: ");
-  Serial.print(lowByte(FCS), HEX);
-  Serial.print(highByte(FCS), HEX);
-
   return FCS;
 
 }
 
 word FrameFCS () {
 
-  Serial.print(" Frame FCS :");
-  Serial.print(PacketIn[FrameLength-1], HEX);
-  Serial.print(PacketIn[FrameLength], HEX);
-  Serial.print(" Frame length: ");
-  Serial.println(FrameLength);
+  word Frame_FCS_value;
 
-  return PacketIn[FrameLength-1]*16 + PacketIn[FrameLength];
+  Frame_FCS_value = HDLC_Packet[FrameLength]*256 + HDLC_Packet[FrameLength-1];
+
+  return Frame_FCS_value;
 
 }
 
@@ -177,7 +178,7 @@ byte ReceiveByte(boolean LookForFlag) {
 
   if (LookForFlag) {            // if we are looking for a flag, it can come at any time
 
-    while ((RXbyte != 0x7E) && Timer_Running()) {    // so we keep scanning until we have an incoming flag (0x7E)
+    while ((RXbyte != 0x7E) && Timer_Running(RX_TimeOut)) {    // so we keep scanning until we have an incoming flag (0x7E)
 
       RXbyte = RXbyte >> 1;     // we shift the byte to the right by 1
 
@@ -203,6 +204,69 @@ byte ReceiveByte(boolean LookForFlag) {
 
 }
 
+
+void flipOut() {
+
+  Stuff = 0;
+
+  bitOut = !bitOut;
+
+  if (bitOut) digitalWrite(TX, HIGH); else digitalWrite(TX, LOW);
+  
+}
+
+void transmit (){
+
+  while (digitalRead(RDY) == HIGH){}
+
+  delayMicroseconds(30);
+
+  digitalWrite (CLK, HIGH);
+
+  delayMicroseconds(30);
+
+  digitalWrite(CLK, LOW);
+
+}
+
+void Reset_TX_Counter() {
+
+  TX_Counter = 0;
+
+}
+
+void Send_HDLC_Byte(byte TXByte, boolean FlagByte){
+
+  int k;
+  byte sendBit;
+
+   for (k=0; k<8; k++){
+
+    sendBit = TXByte & 0x01;
+
+    if (sendBit == 0) flipOut(); else {
+
+      Stuff++;
+
+      if (!FlagByte && (Stuff == 5)){
+
+        transmit();
+
+        flipOut();
+
+      }
+
+    }
+
+    TXByte = TXByte >> 1;
+
+    transmit();
+
+  }
+
+}
+
+
 /*
 
 Public functions
@@ -227,11 +291,19 @@ void Begin_Modem() {
   digitalWrite(CLK, HIGH);
   digitalWrite(PTT, LOW);
   
+  // delay(1000);
+
 }
 
 void Set_RXTimeOut( long RXTimeOutValue) {
 
   RX_TimeOut = RXTimeOutValue;
+
+}
+
+void Set_TXTimeOut( long TXTimeOutValue) {
+
+  TX_TimeOut = TXTimeOutValue;
 
 }
 
@@ -244,6 +316,7 @@ void Modem_Off() {
 
 void Modem_RX() {
 
+  digitalWrite(CLK, HIGH);
   digitalWrite(M0, LOW);
   digitalWrite(M1, HIGH);
 
@@ -253,24 +326,59 @@ void Modem_RX() {
 
 void Modem_TX() {
 
+  bitOut = false;
+
+  digitalWrite(CLK, LOW);
+  digitalWrite(TX, LOW);
+
   digitalWrite(M1, LOW);
   digitalWrite(M0, HIGH);
 
-  delay(25);
+  delay(30);
 
 }
 
+void PTT_On() {
+
+  digitalWrite(PTT, HIGH);
+  
+  delay(PTT_Delay);
+
+}
+
+void PTT_Off() {
+
+  digitalWrite(PTT, LOW);
+
+}
+
+void Set_PTT_Delay(int PTT_Delay_Value) {
+
+  PTT_Delay = PTT_Delay_Value;
+
+}
 
 boolean Carrier_Detected() {
 
-  return (digitalRead(DET));
+  boolean CD = false;
+
+  if (digitalRead(DET) == HIGH) {
+
+    delay(15);
+
+    CD = (digitalRead(DET) == HIGH);
+
+  }
+
+  return CD;
 
 }
 
 int HDLC_Frame_Available() {
 
-  long FCS_from_Calc;
-  long FCS_from_Frame;
+  word FCS_from_Calc;
+  word FCS_from_Frame;
+  word FCS_XOR;
 
   int k = 0;
 
@@ -282,11 +390,11 @@ int HDLC_Frame_Available() {
 
     ByteIn = ReceiveByte (true);
 
+    //Serial.println(ByteIn, HEX);
+
     Flag = (ByteIn == AX25_Flag); 
 
     if (Flag) {
-
-      Serial.print("Channel: ");
 
       while (Flag) {
 
@@ -298,32 +406,28 @@ int HDLC_Frame_Available() {
 
       while ( (k <= MaxFrameLgth) && !Flag ) {
 
-        PacketIn [k] = ByteIn;
+        HDLC_Packet [k] = ByteIn;
 
         k++;
 
         ByteIn = ReceiveByte(false);
 
-        //Serial.print(ByteIn, HEX);
-        //Serial.print(" | ");
-
         Flag = ByteIn == 0x7E;
 
       }
 
-      Serial.println();
-
       FrameLength = k-1;
 
-      FCS_from_Calc = CalculatedFCS();
+      
+      FCS_from_Calc = CalculatedFCS(FrameLength-2);
       FCS_from_Frame = FrameFCS();
 
-      Serial.print("from calc: ");
-      Serial.print(FCS_from_Calc);
-      Serial.print("  from frame: ");
-      Serial.println(FCS_from_Frame);
+     
+      FCS_XOR = FCS_from_Calc ^ FCS_from_Frame;
 
-      if (FCS_from_Calc == FCS_from_Frame) {return FrameLength;} else {return FrameLength*(-1);}
+      //Serial.println(FrameLength);
+
+      if (FCS_XOR == 0x0000) {return FrameLength;} else {return FrameLength*(-1);}
 
     } else return 0;  // no flag received within the timeframe}
 
@@ -333,11 +437,59 @@ int HDLC_Frame_Available() {
 
 byte Get_HDLC_Frame(int i) {
 
-  return PacketIn[i];
+  return HDLC_Packet[i];
 
 }
 
 void Send_HDLC_Frame(byte ByteToSend, boolean LastByte) {
 
+  word Frame_FCS;
+
+  HDLC_Packet[TX_Counter] = ByteToSend;
+
+  if (LastByte) {
+    //Serial.println("Last byte");
+    FrameLength = TX_Counter;
+
+    Frame_FCS = CalculatedFCS(FrameLength);
+
+    DET_Time = millis();
+
+    while ( Carrier_Detected() && Timer_Running(TX_TimeOut) ) {}
+
+    Modem_TX();
+    //Serial.println("TX");
+    PTT_On();
+
+    for (int i=1; i<=100; i++) {
+
+      Send_HDLC_Byte(HDLC_Flag, true);
+
+    }
+    
+    for (int i=0; i<=FrameLength; i++) {
+
+      Send_HDLC_Byte(HDLC_Packet[i], false);
+
+    }
+
+    Send_HDLC_Byte(lowByte(Frame_FCS), false);
+    Send_HDLC_Byte(highByte(Frame_FCS), false);    
+
+    Send_HDLC_Byte(HDLC_Flag, true);
+
+    PTT_Off();
+
+    Modem_RX();
+
+    //Serial.println(Frame_FCS, HEX);
+
+    TX_Counter = 0;
+
+  } else {
+
+    TX_Counter++;
+
+  }
 
 }
