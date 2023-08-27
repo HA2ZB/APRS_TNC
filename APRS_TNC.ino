@@ -14,7 +14,7 @@ int APRS_Frame_Length_TX = 0;
 void setup() {
   // put your setup code here, to run once:
 
-Serial.begin(9600);
+// Serial.begin(9600);
 
 Begin_KISS_port();
 
@@ -24,7 +24,7 @@ Set_TXTimeOut(500);
 
 Set_RXTimeOut(500);
 
-Set_PTT_Delay(1000);
+Set_PTT_Delay(500);
 
 Modem_Off();
 

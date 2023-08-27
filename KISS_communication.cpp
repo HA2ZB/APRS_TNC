@@ -188,7 +188,7 @@ int KISS_frame_available () {
 
       CounterIN = 0;
 
-      Serial.println();
+      // Serial.println();
 
     } else {
 

@@ -312,6 +312,8 @@ void Modem_Off() {
   digitalWrite(M0, HIGH);
   digitalWrite(M1, HIGH);
 
+  delay(200);
+
 }
 
 void Modem_RX() {
@@ -334,7 +336,7 @@ void Modem_TX() {
   digitalWrite(M1, LOW);
   digitalWrite(M0, HIGH);
 
-  delay(30);
+  delay(300);
 
 }
 
@@ -457,11 +459,14 @@ void Send_HDLC_Frame(byte ByteToSend, boolean LastByte) {
 
     while ( Carrier_Detected() && Timer_Running(TX_TimeOut) ) {}
 
-    Modem_TX();
-    //Serial.println("TX");
+    // Modem_Off();
+
     PTT_On();
 
-    for (int i=1; i<=100; i++) {
+    Modem_TX();
+    //Serial.println("TX");
+
+    for (int i=1; i<=600; i++) {
 
       Send_HDLC_Byte(HDLC_Flag, true);
 
