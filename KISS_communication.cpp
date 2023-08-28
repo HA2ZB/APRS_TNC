@@ -1,8 +1,9 @@
 #include "HardwareSerial.h"
 #include "KISS_communication.h"
 
-byte FrameIN [300];
-byte FrameOUT [300];
+const int MaxKISSFrameLgth = 340;
+byte FrameIN [MaxKISSFrameLgth];
+byte FrameOUT [MaxKISSFrameLgth];
 int CounterIN = 0;
 int CounterOUT = 0;
 boolean EscMode;
@@ -13,7 +14,7 @@ byte TFESC = 0xDD;
 
 void Begin_KISS_port() {
 
-  delay(5000);
+  delay(500);
 
   Serial2.begin(9600);
 

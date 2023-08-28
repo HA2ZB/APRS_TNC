@@ -2,7 +2,7 @@
 #include "HardwareSerial.h"
 #include "HDLC_MX614.h"
 
-const int MaxFrameLgth = 300;
+const int MaxFrameLgth = 340;
 
 const byte HDLC_Flag = 0x7E;
 
