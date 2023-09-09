@@ -1,7 +1,7 @@
 # APRS_TNC
 Arduino Mega 2560 based APRS TNC with MX614 (FX614) modem
 
-This is a very initial stage of the development of an Arduino based APRS TNC. The current functionality connects Android APRSDroid app to the radio audio interface via Bluetooth (HC-05 module).
+This is a very initial stage of the development of an Arduino based APRS TNC. The current functionality connects Android APRSDroid app to the radio audio interface via Bluetooth (HC-05 module). I am using the Elegoo Mega 2560 Arduio clone in this project.
 
 Basic functionality is tested, working, but I cannot guarantee the bug free operation of course, use it on your own risk.
 
