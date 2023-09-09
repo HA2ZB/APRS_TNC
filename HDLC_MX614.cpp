@@ -319,7 +319,7 @@ void Begin_Modem() {
   digitalWrite(M0, HIGH);
   digitalWrite(M1, HIGH);
   digitalWrite(TX, HIGH);
-  digitalWrite(CLK, HIGH);
+  digitalWrite(CLK, HIGH);    // as per the datasheet, this is recommended for RX mode. however, for TX is should be LOW initially
   digitalWrite(PTT, LOW);
 
 }
@@ -354,7 +354,7 @@ void Modem_Off() {
 
 void Modem_RX() {
 
-  digitalWrite(CLK, HIGH);
+  digitalWrite(CLK, HIGH);    // as per the datasheet, this is recommended for RX mode
   digitalWrite(M0, LOW);
   digitalWrite(M1, HIGH);
 
@@ -367,7 +367,7 @@ void Modem_TX() {
 
   bitOut = false;     // we set the TXD to low, so we set this global variable accordingly to 'false'
 
-  digitalWrite(CLK, LOW);
+  digitalWrite(CLK, LOW);   // the initial level should be LOW, otherwise we cannot have a rising edge
   digitalWrite(TX, LOW);
 
   digitalWrite(M1, LOW);
@@ -418,122 +418,134 @@ boolean Carrier_Detected() {
 
 }
 
+// HDLC frame receiving function
+// the return value is a non-zero integer if frame received, the integer value is the number of received bytes (except flags)
+// the value is negative in case of FCS error (calculated FCS does not equal with received FCS)
 
 int HDLC_Frame_Available() {
 
-  word FCS_from_Calc;
-  word FCS_from_Frame;
-  word FCS_XOR;
+  word FCS_from_Calc;     // internal variable for calculated FCS
+  word FCS_from_Frame;    // internal variable for received FCS
+  word FCS_XOR;           // internal comparison variable
 
-  int k = 0;
+  int k = 0;              // internal byte counter
 
-  Stuff = 0;
+  Stuff = 0;              // ve set the global stuff bit counter to zero
 
   if (Carrier_Detected()) {  //signal detected, we should have flag(s) incoming
 
-    Set_Time = millis();
+    Set_Time = millis();  // we initialize the counter (store the current time to the global variable), the counter will be checked in the ReceiveByte function
 
-    ByteIn = ReceiveByte(true);
+    ByteIn = ReceiveByte(true);   // we are looking for a flag, the ReceiveByte function is called accordingly with 'true' argument
+                                  // in this case the ReceiveByte function will return either when received a flag byte or the counter counts down
 
-    //Serial.println(ByteIn, HEX);
+    Flag = (ByteIn == HDLC_Flag); // we check if a flag was received
 
-    Flag = (ByteIn == HDLC_Flag);
+    if (Flag) {                   // if flag was received
 
-    if (Flag) {
+      while (Flag) {              // we go on with receiving the bytes, as normally more flags are sent at the beginning of the frame sequence
 
-      while (Flag) {
+        ByteIn = ReceiveByte(false);  // so we check the next byte
 
-        ByteIn = ReceiveByte(false);
-
-        Flag = (ByteIn == HDLC_Flag);
+        Flag = (ByteIn == HDLC_Flag); // if it is a flag, we continue the while loop until a different byte received
       }
 
-      while ((k <= MaxFrameLgth) && !Flag) {
+      while ((k <= MaxFrameLgth) && !Flag) {    // we start processing the incoming HDLC bytes, until we receive a flag byte, or exceed the max frame length
 
-        HDLC_Packet[k] = ByteIn;
+        HDLC_Packet[k] = ByteIn;                // we store the received byte to the next position of the global array variable
 
-        k++;
+        k++;                                    // increment the counter for the next byte
 
-        ByteIn = ReceiveByte(false);
+        ByteIn = ReceiveByte(false);            // receive the next byte
 
-        Flag = ByteIn == 0x7E;
+        Flag = ByteIn == 0x7E;                  // check if flag received
       }
 
-      FrameLength = k - 1;
+      FrameLength = k - 1;                      // decrement the counter, this is the length of the HDLC frame (without flags)
 
 
-      FCS_from_Calc = CalculatedFCS(FrameLength - 2);
-      FCS_from_Frame = FrameFCS();
+      FCS_from_Calc = CalculatedFCS(FrameLength - 2);     // we calculate the FCS value of the frame
+      FCS_from_Frame = FrameFCS();                        // we get the received FCS bytes from the frame
 
 
-      FCS_XOR = FCS_from_Calc ^ FCS_from_Frame;
+      FCS_XOR = FCS_from_Calc ^ FCS_from_Frame;           //comparison of the two values
 
-      //Serial.println(FrameLength);
-
-      if (FCS_XOR == 0x0000) {
-        return FrameLength;
+      if (FCS_XOR == 0x0000) {                            // if they are equal
+        
+        return FrameLength;                               // we return the length of the frame (so NOT the frame itself!)
+      
       } else {
-        return FrameLength * (-1);
+      
+        return FrameLength * (-1);                        // if theere is a deviation between the two FCS values, we returh the length as a negative integer
+      
       }
 
-    } else return 0;  // no flag received within the timeframe}
+    } else return 0;  // no flag received within the timeframe, so we return zero
 
-  } else return 0;  // no carrier detected
+  } else return 0;  // no carrier detected, so we return zero
+
 }
 
-byte Get_HDLC_Frame(int i) {
+// getter function for the global HDLC array variable
 
-  return HDLC_Packet[i];
+byte Get_HDLC_Frame(int i) {    // argument is the position of databyte we want to get
+
+  return HDLC_Packet[i];        // return value is the byte itself
+
 }
+
+// function to send HDLC frame
+// no return value
+// arguments: the byte to send IN ORDER, so we call the function as many times as many bytes we have, the first at first, then 2nd and so on
+// the second boolean argument marks the last byte, so after that the function will not wait any longer, but sends the bytes out as a HDLC frame
 
 void Send_HDLC_Frame(byte ByteToSend, boolean LastByte) {
 
-  word Frame_FCS;
+  word Frame_FCS;   // internal FCS variable
 
-  HDLC_Packet[TX_Counter] = ByteToSend;
+  HDLC_Packet[TX_Counter] = ByteToSend;   // stores the bytge in the argument to the position of the TX_Counter, which has to be reset by a separate external function
 
-  if (LastByte) {
-    //Serial.println("Last byte");
-    FrameLength = TX_Counter;
+  if (LastByte) {   // if this is the last byte to send
+    
+    FrameLength = TX_Counter;   // the length of the frame is (without FCS) is the TX_Counter value
 
-    Frame_FCS = CalculatedFCS(FrameLength);
+    Frame_FCS = CalculatedFCS(FrameLength);   // we calculate the FCS value for the frame before sending
 
-    Set_Time = millis();
+    Set_Time = millis();        // reset the counter
 
-    while (Carrier_Detected() && Timer_Running(TX_TimeOut)) {}
+    while (Carrier_Detected() && Timer_Running(TX_TimeOut)) {}    // we check if the channel is busy (carrier detected), but we do not wait longer than TX_TimeOut
 
-    // Modem_Off();
+    PTT_On();       // we key the radio PTT
 
-    PTT_On();
+    Modem_TX();     // we set the modem to TX mode
 
-    Modem_TX();
-    //Serial.println("TX");
+    for (int i = 1; i <= 600; i++) {      // we start the transmission with several HDLC flags
 
-    for (int i = 1; i <= 600; i++) {
-
-      Send_HDLC_Byte(HDLC_Flag, true);
+      Send_HDLC_Byte(HDLC_Flag, true);    // calling the HDLC byte send function (true argument means no stuffing required)
+    
     }
 
-    for (int i = 0; i <= FrameLength; i++) {
+    for (int i = 0; i <= FrameLength; i++) {      // we follow with the databytes
 
-      Send_HDLC_Byte(HDLC_Packet[i], false);
+      Send_HDLC_Byte(HDLC_Packet[i], false);      // we call the sending function with the next byte in order, stuffing enabled
+
     }
 
-    Send_HDLC_Byte(lowByte(Frame_FCS), false);
+    Send_HDLC_Byte(lowByte(Frame_FCS), false);    // finally we send out the 2 FCS bytes
     Send_HDLC_Byte(highByte(Frame_FCS), false);
 
-    Send_HDLC_Byte(HDLC_Flag, true);
+    Send_HDLC_Byte(HDLC_Flag, true);              // we close the frame with an HDLC flag
 
-    PTT_Off();
+    PTT_Off();    // we unkey the radio PTT
 
-    Modem_RX();
+    Modem_RX();   // we set back the modem to RX mode
 
-    //Serial.println(Frame_FCS, HEX);
-
-    TX_Counter = 0;
+    TX_Counter = 0;   // now we can reset the TX counter
 
   } else {
 
-    TX_Counter++;
+    TX_Counter++;   // if it was not the last byte to send, we simply increment the counter and go to the next incoming byte
+
   }
+  
 }
