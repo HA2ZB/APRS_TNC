@@ -1,13 +1,13 @@
 # APRS_TNC
 Arduino Mega 2560 based APRS TNC with MX614 (FX614) modem
 
-This is a very initial stage of the development of an Arduino based APRS TNC. The current functionality connects Android APRSDroid app to the radio audio interface via Bluetooth (HC-05 module). I am using the Elegoo Mega 2560 Arduio clone in this project.
+This is a very initial stage of the development of an Arduino based APRS TNC. The current functionality connects Android APRSdroid app to the radio audio interface via Bluetooth (HC-05 module). It should obviously work with other serial KISS terminals as well (not tested). I am using the Elegoo Mega 2560 Arduio clone in this project.
 
 Basic functionality is tested, working, but I cannot guarantee the bug free operation of course, use it on your own risk.
 
 Why MX/FX614? This is a proven, legacy, but still available chip. Using this as coder/decoder reduces the workload of Arduino, and provides reasonable signal processing performance.
 
-You can find the modem circuit schematics in the Hardware folder. I still have it on breadboard, once a final construcion is ready, I will upload the PCB layout and other documents as well.
+You can find the modem circuit schematics in the Hardware folder. I still have the device on breadboard, once a final construcion is ready, I will upload the PCB layout and other documents as well.
 
 If you want to implement, here are important things to start with and understand:
 
