@@ -7,7 +7,7 @@ Basic functionality is tested, working, but I cannot guarantee the bug free oper
 
 Why MX/FX614? This is a proven, legacy, but still available chip. Using this as coder/decoder reduces the workload of Arduino, and provides reasonable signal processing performance.
 
-You can find the modem circuit schemtics in the Hardware folder. I have it on breadboard, once a final construcion is ready, I will upload the PCB layout and other documents as well.
+You can find the modem circuit schematics in the Hardware folder. I still have it on breadboard, once a final construcion is ready, I will upload the PCB layout and other documents as well.
 
 If you want to implement, here are important things to start with and understand:
 
