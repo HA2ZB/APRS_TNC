@@ -4,7 +4,7 @@
 // IMPORTANT: this library uses the Arduino serial communication port to connect the HC-05 Bluetooth module
 // Please apply the followings:
 // 1) Serial2 is used, so connect HC-05 to the Serial2 interface - or change the interface EVERYWHERE in this code
-// 2) Change the RX buffer size from the standard 64 byte to at least 332 bytes in the Arduino IDE Hardwareserial.h file
+// 2) Change the RX buffer size from the standard 64 byte to at least 340 bytes in the Arduino IDE Hardwareserial.h file
 
 // If you are not familiar, check APRS KISS reference for the specification details
 
