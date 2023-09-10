@@ -519,7 +519,7 @@ void Send_HDLC_Frame(byte ByteToSend, boolean LastByte) {
 
     Modem_TX();     // we set the modem to TX mode
 
-    for (int i = 1; i <= 600; i++) {      // we start the transmission with several HDLC flags
+    for (int i = 1; i <= 20; i++) {      // we start the transmission with several HDLC flags
 
       Send_HDLC_Byte(HDLC_Flag, true);    // calling the HDLC byte send function (true argument means no stuffing required)
     
