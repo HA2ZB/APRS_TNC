@@ -13,7 +13,7 @@ If you want to implement, here are important things to start with and understand
 
 1. Arduino Serial2 is used for serial BT communication, so connect HC-05 to the Serial2 interface - or change the interface EVERYWHERE in KISS_communication.cpp
 2. Change the RX buffer size from the standard 64 byte to at least 332 bytes in the Arduino IDE Hardwareserial.h file
-
+3. The HC-05 module caused EMI issues during the tests, so I deployed it on a separate breadboard, and applied ferrite beads on connecting wires between Mega 2560 5V-GND connections to modem and HC-05, and also on the serial data wires between Mega 2560 and HC-05.
 
 Credits to John Hansen, W2FS (https://www.tapr.org/pdf/DCC1998-PICet-W2FS.pdf) for the basic principles of APRS transmission code.
 
@@ -31,3 +31,5 @@ KISS TNC reference: https://www.ax25.net/kiss.aspx
 The Cyclic Redundancy Check (CRC) for AX.25 (FCS): http://practicingelectronics.com/articles/article-100003/article.php
 
 How to change RX buffer size in Hardwareserial.h: https://forum.arduino.cc/t/solved-serial-buffer-size/581828/4
+
+Arduino HC-05 tutorial: https://howtomechatronics.com/tutorials/arduino/arduino-and-hc-05-bluetooth-module-tutorial/
