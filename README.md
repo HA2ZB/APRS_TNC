@@ -12,7 +12,7 @@ You can find the modem circuit schematics in the Hardware folder. I still have i
 If you want to implement, here are important things to start with and understand:
 
 1. Arduino Serial2 is used for serial BT communication, so connect HC-05 to the Serial2 interface - or change the interface EVERYWHERE in KISS_communication.cpp
-2. Change the RX buffer size from the standard 64 byte to at least 332 bytes in the Arduino IDE Hardwareserial.h file
+2. Change the RX buffer size from the standard 64 byte to at least 340 bytes in the Arduino IDE Hardwareserial.h file
 3. The HC-05 module caused EMI issues during the tests, so I deployed it on a separate breadboard, and applied ferrite beads on connecting wires between Mega 2560 5V-GND connections to modem and HC-05, and also on the serial data wires between Mega 2560 and HC-05.
 
 Credits to John Hansen, W2FS (https://www.tapr.org/pdf/DCC1998-PICet-W2FS.pdf) for the basic principles of APRS transmission code.
