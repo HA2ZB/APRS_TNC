@@ -1,6 +1,8 @@
 // APRS packet coding and decoding functions for Arduino Mega 2560 with MX/FX614 modem IC
 // Béla Zagyva, HA2ZB
 
+// DO NOT USE - code is under development
+
 #include "Arduino.h"
 #include "HardwareSerial.h"
 #include "APRS_communication.h"

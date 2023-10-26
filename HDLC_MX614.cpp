@@ -11,21 +11,23 @@ const byte HDLC_Flag = 0x7E;  // HDLC flag byte (marks beginning and end of HDLC
 
 // Arduino Mega 2560 Digital ports used for modem control
 
-const byte RX = 2;  // RX data input (from modem/radio)
+const byte RX = 42;  // RX data input (from modem/radio)
 
-byte TX = 8;  // TX data output (to modem/radio)
+const byte TX = 46;  // TX data output (to modem/radio)
 
-byte PTT = 10;  // PTT output on=HIGH, off=LOW
+const byte PTT = 8;  // PTT output on=HIGH, off=LOW
 
-byte RDY = 12;  // RDY input modem handshake signal - ready to receive TX bit
+const byte RDY = 38;  // RDY input modem handshake signal - ready to receive TX bit
 
-byte CLK = 6;  // CLK output modem handshake signal, latches the next TX byte at modem
+const byte CLK = 44;  // CLK output modem handshake signal, latches the next TX byte at modem
 
-byte DET = 22;  // Carrier detect input from modem
+const byte DET = 40;  // Carrier detect input from modem
 
-byte M0 = 26;  // Modem control output, see below
+const byte M0 = 52;  // Modem control output, see below
 
-byte M1 = 30;  // Modem control output, see below
+const byte M1 = 50;  // Modem control output, see below
+
+const byte RXEQU = 48; // Modem RX equalizer mode. HIGH = ON, LOW = OFF
 
 // end of Digital ports definition
 
@@ -314,13 +316,15 @@ void Begin_Modem() {
   pinMode(DET, INPUT);
   pinMode(M0, OUTPUT);
   pinMode(M1, OUTPUT);
+  pinMode(RXEQU, OUTPUT);
 
   // setting initial output levels
   digitalWrite(M0, HIGH);
   digitalWrite(M1, HIGH);
   digitalWrite(TX, HIGH);
-  digitalWrite(CLK, HIGH);    // as per the datasheet, this is recommended for RX mode. however, for TX is should be LOW initially
+  digitalWrite(CLK, HIGH);    // as per the datasheet, this is recommended for RX mode. However, for TX it should be LOW initially
   digitalWrite(PTT, LOW);
+  digitalWrite(RXEQU, LOW);
 
 }
 
