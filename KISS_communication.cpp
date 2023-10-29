@@ -23,16 +23,20 @@ int CounterOUT = 0;     // global variable for outgoing frame byte counter
 
 boolean EscMode;        // global booleanv variable for indicating if the KISS communication is in escape mode
 
-byte FEND = 0xC0;       // frame end constant
-byte FESC = 0xDB;       // frame escape constant
-byte TFEND = 0xDC;      // transposed frame end constant
-byte TFESC = 0xDD;      // trensposed frame escape constant
+const byte FEND = 0xC0;       // frame end constant
+const byte FESC = 0xDB;       // frame escape constant
+const byte TFEND = 0xDC;      // transposed frame end constant
+const byte TFESC = 0xDD;      // transposed frame escape constant
+
+const byte BT_STATE = 36;     // HC-05 Bluetooth module STATE pin connected to D36 port to monitor the conncetion status
 
 // function to initialize KISS port (Serial2 in this case)
 
 void Begin_KISS_port() {
 
   delay(500);   // delay in ms - may not needed
+
+  pinMode(BT_STATE, INPUT);   // setting D36 port to input
 
   Serial2.begin(9600);  // initialize Serial2
 

@@ -2,6 +2,7 @@
 // Béla Zagyva, HA2ZB
 
 #include "Arduino.h"
+#include "pins_arduino.h"
 #include "HardwareSerial.h"
 #include "HDLC_MX614.h"
 
